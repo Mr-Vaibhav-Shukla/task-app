@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 const userSchema = mongoose.Schema({
     name: {
@@ -39,18 +40,34 @@ const userSchema = mongoose.Schema({
                 throw new Error('Password should not contain password!')
             }
         }
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 })
 
-userSchema.statics.findByCredentials = async (email, password) => {
-    console.log("Hellooooooooo")
-    const user = await User.findOne({email})
+userSchema.methods.generateAuthToken = async function () {
+    const user = this
+    const token = jwt.sign({ _id: user._id.toString() }, 'thisissecreattoken')
 
-    if(!user){
+    user.tokens = user.tokens.concat({token})
+    await user.save() 
+
+    return token
+}
+
+
+userSchema.statics.findByCredentials = async (email, password) => {
+    const user = await User.findOne({ email })
+
+    if (!user) {
         throw new Error("Email not found")
     }
-    const isMatch = await bcrypt.compare(password,user.password)
-    if(!isMatch){
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
         throw new Error("Invalid Password")
     }
     console.log(user)
@@ -58,14 +75,14 @@ userSchema.statics.findByCredentials = async (email, password) => {
 }
 
 //Hashing the password before saving
-userSchema.pre('save',async function(next){
+userSchema.pre('save', async function (next) {
     const user = this
-    if(user.isModified('password')){
-        user.password = await bcrypt.hash(user.password,8)
+    if (user.isModified('password')) {
+        user.password = await bcrypt.hash(user.password, 8)
     }
     next()
 })
 
 const User = mongoose.model('User', userSchema);
 
-module.exports =  mongoose.model('User')
+module.exports = mongoose.model('User')

@@ -9,7 +9,8 @@ router.post('/users', async (req, res) => {
     
     try {
         await u1.save()
-        res.status(201).send(u1)
+        const token = await u1.generateAuthToken()
+        res.send({u1,token})
     } catch (error) {
         res.status(400).send(error)
     }
@@ -74,9 +75,9 @@ router.delete('/users/:id', async (req,res) => {
 
 router.post('/users/login',async(req,res) => {
     try {
-        console.log("hhh")
         const user = await User.findByCredentials(req.body.email, req.body.password)
-        res.send(user)
+        const token = await user.generateAuthToken()
+        res.send({user,token})
     } catch (error) {
         res.status(400).send(error)
     }
