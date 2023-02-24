@@ -49,6 +49,15 @@ const userSchema = mongoose.Schema({
     }]
 })
 
+
+userSchema.methods.toJSON = function(){
+    const user = this
+    const userObject = user.toObject()
+    delete userObject.tokens
+    delete userObject.password
+    return userObject
+}
+
 userSchema.methods.generateAuthToken = async function () {
     const user = this
     const token = jwt.sign({ _id: user._id.toString() }, 'thisissecreattoken')
@@ -70,7 +79,6 @@ userSchema.statics.findByCredentials = async (email, password) => {
     if (!isMatch) {
         throw new Error("Invalid Password")
     }
-    console.log(user)
     return user
 }
 
